@@ -1,7 +1,9 @@
 package znet
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/zhuSilence/go-learn/zinx/utils"
 	"github.com/zhuSilence/go-learn/zinx/ziface"
 	"net"
 )
@@ -31,7 +33,11 @@ type Server struct {
 //}
 
 func (s *Server) Start() {
-
+	marshal, err := json.Marshal(utils.GlobalObject)
+	if err != nil {
+		fmt.Println("json Marshal err", err)
+	}
+	fmt.Printf("[zinx config]: %s\n", marshal)
 	fmt.Printf("[Start] Server Listenner at IP: %s, Port %d, is starting\n", s.IP, s.Port)
 
 	go func() {
@@ -103,10 +109,10 @@ func (s *Server) AddRouter(router ziface.IRouter) {
 
 func NewServer(name string) ziface.IServer {
 	s := &Server{
-		Name:      name,
+		Name:      utils.GlobalObject.Name,
 		IPVersion: "tcp4",
-		IP:        "0.0.0.0",
-		Port:      8999,
+		IP:        utils.GlobalObject.Host,
+		Port:      utils.GlobalObject.TcpPort,
 		Router:    nil,
 	}
 	return s
