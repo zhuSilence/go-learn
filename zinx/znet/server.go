@@ -60,7 +60,7 @@ func (s *Server) Start() {
 			}
 
 			// 客户端已经与服务器建立链接，业务处理
-			dealConn := NewConnection(conn, cid, CallBackToClient)
+			dealConn := NewConnection(conn, cid, s.Router)
 			cid++
 			go dealConn.Start()
 			//go func() {
@@ -94,6 +94,11 @@ func (s *Server) Server() {
 
 	// 阻塞
 	select {}
+}
+
+func (s *Server) AddRouter(router ziface.IRouter) {
+	s.Router = router
+	fmt.Println("Add router success")
 }
 
 func NewServer(name string) ziface.IServer {

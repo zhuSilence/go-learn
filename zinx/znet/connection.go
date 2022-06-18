@@ -13,8 +13,6 @@ type Connection struct {
 	ConnID uint32
 	// 当前的连接状态
 	isClosed bool
-	// 当前连接所绑定的处理业务的方法
-	handleApi ziface.HandleFunc
 	// 告知岗前连接已经退出的 channel
 	ExitChan chan bool
 	// 当前的链接处理方法 router
@@ -22,14 +20,14 @@ type Connection struct {
 }
 
 // NewConnection 初始化连接的方法
-func NewConnection(conn *net.TCPConn, connID uint32, callback_api ziface.HandleFunc) *Connection {
+func NewConnection(conn *net.TCPConn, connID uint32, router ziface.IRouter) *Connection {
 
 	c := &Connection{
-		Conn:      conn,
-		ConnID:    connID,
-		isClosed:  false,
-		handleApi: callback_api,
-		ExitChan:  make(chan bool, 1),
+		Conn:     conn,
+		ConnID:   connID,
+		isClosed: false,
+		Router:   router,
+		ExitChan: make(chan bool, 1),
 	}
 	return c
 }

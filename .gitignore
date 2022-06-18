@@ -1,0 +1,24 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Maven template
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
+!/.mvn/wrapper/maven-wrapper.jar
+### Example user template template
+### Example user template
+
+# IntelliJ project files
+.mvm
+.idea
+*.iml
+out
+gen
+/caeser-ad-dsp/caeser-ad-dsp-api/src/test/java/
+/caeser-ad-dsp/caeser-ad-data/src/test/java/
