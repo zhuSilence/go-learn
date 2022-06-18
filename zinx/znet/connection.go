@@ -1,9 +1,10 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
-	"github.com/zhuSilence/go-learn/zinx/utils"
 	"github.com/zhuSilence/go-learn/zinx/ziface"
+	"io"
 	"net"
 )
 
@@ -38,17 +39,35 @@ func (c *Connection) StartReader() {
 	defer fmt.Println("connId=", c.ConnID, " Reader is exit, remote addr is ", c.RemoteAddr().String())
 	defer c.Stop()
 	for {
-		buf := make([]byte, utils.GlobalObject.MaxPackageSize)
-		_, err := c.Conn.Read(buf)
+		// 读取客户端的数据
+		// 创建拆包解包对象
+		dp := NewDataPack()
+		// 读取 msg head 二进制流 8 个字节
+		headData := make([]byte, dp.GetHeadLen())
+		if _, err := io.ReadFull(c.GetTCPConnection(), headData); err != nil {
+			fmt.Println("read msg head error", err)
+			break
+		}
+		// 二进制流拆包，到的 msgId 和 msgDataLen
+		msg, err := dp.Unpack(headData)
 		if err != nil {
-			fmt.Println("recv buf err", err)
-			continue
+			fmt.Println("unpack error", err)
+			break
+		}
+		// 根据 msg dataLen 再次读取 data
+		if msg.GetDataLen() > 0 {
+			data := make([]byte, msg.GetDataLen())
+			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
+				fmt.Println("read msg data error", err)
+				break
+			}
+			msg.SetData(data)
 		}
 
 		// 得到当前链接的 Request 数据
 		req := Request{
 			conn: c,
-			data: buf,
+			msg:  msg,
 		}
 		// 从路由中找到注册绑定的 Conn 对应的 router，进行执行
 		go func(request ziface.IRequest) {
@@ -56,12 +75,6 @@ func (c *Connection) StartReader() {
 			c.Router.Handle(request)
 			c.Router.PostHandle(request)
 		}(&req)
-
-		//// 调用当前连接所绑定的 handleAPI
-		//if err := c.handleApi(c.Conn, buf, cnt); err != nil {
-		//	fmt.Println("connId=", c.ConnID, "handleApi err", err)
-		//	break
-		//}
 	}
 
 }
@@ -94,6 +107,21 @@ func (c *Connection) RemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
-func (c *Connection) Send(data []byte) error {
+func (c *Connection) SendMsg(msgId uint32, data []byte) error {
+	if c.isClosed {
+		return errors.New("connection closed when send msg")
+	}
+	dp := NewDataPack()
+	binaryMsg, err := dp.Pack(NewMsgPackage(msgId, data))
+	if err != nil {
+		fmt.Println("Pack msg error", err)
+		return errors.New("pack msg error")
+	}
+
+	// 将数据发送给客户端
+	if _, err := c.GetTCPConnection().Write(binaryMsg); err != nil {
+		fmt.Println("write msg msgId ", msgId, " error", err)
+		return errors.New("write msg error")
+	}
 	return nil
 }
