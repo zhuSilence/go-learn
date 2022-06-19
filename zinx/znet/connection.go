@@ -17,6 +17,8 @@ type Connection struct {
 	isClosed bool
 	// 告知岗前连接已经退出的 channel
 	ExitChan chan bool
+	// 增加一个读写分离的 channel
+	msgChan chan []byte
 	// 当前的链接处理方法 msgHandler
 	MsgHandler ziface.IMsgHandler
 }
@@ -29,6 +31,7 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandl
 		ConnID:     connID,
 		isClosed:   false,
 		MsgHandler: msgHandler,
+		msgChan:    make(chan []byte),
 		ExitChan:   make(chan bool, 1),
 	}
 	return c
@@ -74,10 +77,34 @@ func (c *Connection) StartReader() {
 	}
 
 }
+
+// StartWrite 监听管道进行消息的回写
+func (c *Connection) StartWrite() {
+	fmt.Println("Write Goroutine is running...")
+	defer fmt.Println("connId=", c.ConnID, " Writer is exit, remote addr is ", c.RemoteAddr().String())
+
+	// 不断的阻塞等待 channel 的消息
+	for {
+		select {
+		case data := <-c.msgChan:
+			// 有数据写给客户端
+			if _, err := c.Conn.Write(data); err != nil {
+				fmt.Println("Send data error", err)
+				return
+			}
+		case <-c.ExitChan:
+			// 代表 Reader 已经退出，此时 Write 需要退出
+			return
+		}
+	}
+}
+
 func (c *Connection) Start() {
 	fmt.Println("Connection start , connId ", c.ConnID)
 	// 启动从当前的连接读数据
 	go c.StartReader()
+	// 启动从当前的连接写数据
+	go c.StartWrite()
 }
 
 func (c *Connection) Stop() {
@@ -87,8 +114,11 @@ func (c *Connection) Stop() {
 	}
 	// 回收资源
 	c.isClosed = true
+	// 告知 write 关闭
+	c.ExitChan <- true
 	c.Conn.Close()
 	close(c.ExitChan)
+	close(c.msgChan)
 }
 
 func (c *Connection) GetTCPConnection() *net.TCPConn {
@@ -115,9 +145,7 @@ func (c *Connection) SendMsg(msgId uint32, data []byte) error {
 	}
 
 	// 将数据发送给客户端
-	if _, err := c.GetTCPConnection().Write(binaryMsg); err != nil {
-		fmt.Println("write msg msgId ", msgId, " error", err)
-		return errors.New("write msg error")
-	}
+	c.msgChan <- binaryMsg
+
 	return nil
 }
