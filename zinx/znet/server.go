@@ -21,17 +21,6 @@ type Server struct {
 	MsgHandler ziface.IMsgHandler
 }
 
-// CallBackToClient 当前客户端绑定的方法
-//func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-//	// 回写功能
-//	fmt.Println("[Conn Handle] CallBackToClient...")
-//	if _, err := conn.Write(data[:cnt]); err != nil {
-//		fmt.Println("write back buf err", err)
-//		return errors.New("CallBackToClient Error")
-//	}
-//	return nil
-//}
-
 func (s *Server) Start() {
 	marshal, err := json.Marshal(utils.GlobalObject)
 	if err != nil {
@@ -41,6 +30,9 @@ func (s *Server) Start() {
 	fmt.Printf("[Start] Server Listenner at IP: %s, Port %d, is starting\n", s.IP, s.Port)
 
 	go func() {
+		//0 开启消息处理池
+		s.MsgHandler.StartWorkerPool()
+
 		//1. 获取一个 TCP 的 addr
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {

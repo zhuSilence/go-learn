@@ -22,7 +22,7 @@ func NewMsgHandle() *MsgHandle {
 	return &MsgHandle{
 		Apis:           make(map[uint32]ziface.IRouter),
 		WorkerPoolSize: utils.GlobalObject.WorkerPoolSize,
-		TaskQueue:      make([]chan ziface.IRequest, utils.GlobalObject.MaxWorkerTaskLen),
+		TaskQueue:      make([]chan ziface.IRequest, utils.GlobalObject.WorkerPoolSize),
 	}
 }
 func (mh *MsgHandle) DoMsgHandler(request ziface.IRequest) {
@@ -42,4 +42,37 @@ func (mh *MsgHandle) AddRouter(msgId uint32, router ziface.IRouter) {
 	}
 	mh.Apis[msgId] = router
 	fmt.Println("Add api msgId = ", msgId, " success ")
+}
+
+func (mh *MsgHandle) StartWorkerPool() {
+	// 根据 workerPoolSize 开启 worker 和分配空间
+	for i := 0; i < int(mh.WorkerPoolSize); i++ {
+		mh.TaskQueue[i] = make(chan ziface.IRequest, utils.GlobalObject.MaxWorkerTaskLen)
+		// 启动单个 worker
+		go mh.startOneWorker(i)
+	}
+}
+
+func (mh *MsgHandle) startOneWorker(wordId int) {
+	fmt.Println("Worker ID = ", wordId, " started... ")
+
+	for {
+		select {
+		// 如果有消息，获取的就是一个客户端的 request
+		case request := <-mh.TaskQueue[wordId]:
+			mh.DoMsgHandler(request)
+		}
+	}
+
+}
+
+func (mh *MsgHandle) SendMsgToTaskQueue(request ziface.IRequest) {
+	// 将消息平均分配给不同的 worker，根据客户端的链接 id 来分配
+
+	workId := request.GetConnection().GetConnId() % mh.WorkerPoolSize
+	fmt.Println("Add ConnId = ", request.GetConnection().GetConnId(),
+		" request MsgId = ", request.GetMsgID(),
+		" to WorkerId = ", workId)
+
+	mh.TaskQueue[workId] <- request
 }

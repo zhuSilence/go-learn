@@ -42,7 +42,7 @@ func (this *HelloZinxRouter) Handle(request ziface.IRequest) {
 
 func main() {
 	// 1. create a server with zinx
-	s := znet.NewServer("[Zinx V0.6]")
+	s := znet.NewServer("[Zinx V0.8]")
 	// 2. 添加 router
 
 	s.AddRouter(0, &PingRouter{})

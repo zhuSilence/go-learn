@@ -16,7 +16,7 @@ type GlobalObj struct {
 	MaxConn          int    // 当前服务器允许的最大链接数
 	MaxPackageSize   int    // 当前 Zinx 框架数据包的最大值
 	WorkerPoolSize   uint32 // 消息队列线程池大小
-	MaxWorkerTaskLen uint32 // Zinx 线程池最大限制
+	MaxWorkerTaskLen uint32 // 单个消息队列的长度
 }
 
 // GlobalObject 定义一个全局的对象 GlobalObj
@@ -41,7 +41,7 @@ func init() {
 	// 默认配置
 	GlobalObject = &GlobalObj{
 		Name:             "ZinxServerApp",
-		Version:          "V0.4",
+		Version:          "V0.8",
 		TcpPort:          8999,
 		Host:             "0.0.0.0",
 		MaxConn:          1000,

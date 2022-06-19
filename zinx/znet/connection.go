@@ -3,6 +3,7 @@ package znet
 import (
 	"errors"
 	"fmt"
+	"github.com/zhuSilence/go-learn/zinx/utils"
 	"github.com/zhuSilence/go-learn/zinx/ziface"
 	"io"
 	"net"
@@ -72,8 +73,14 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg,
 		}
-		// 从路由中找到注册绑定的 Conn 对应的 router，进行执行
-		go c.MsgHandler.DoMsgHandler(&req)
+
+		// 开启的工作池，则使用工作池处理消息
+		if utils.GlobalObject.WorkerPoolSize > 0 {
+			c.MsgHandler.SendMsgToTaskQueue(&req)
+		} else {
+			// 从路由中找到注册绑定的 Conn 对应的 router，进行执行
+			go c.MsgHandler.DoMsgHandler(&req)
+		}
 	}
 
 }
