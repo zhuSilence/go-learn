@@ -43,10 +43,33 @@ func (this *HelloZinxRouter) Handle(request ziface.IRequest) {
 func main() {
 	// 1. create a server with zinx
 	s := znet.NewServer("[Zinx V0.8]")
-	// 2. 添加 router
+
+	// 2. 注册钩子函数
+	s.SetOnConnStart(func(connection ziface.IConnection) {
+		fmt.Println("====> SetOnConnStart is called....")
+		if err := connection.SendMsg(202, []byte("====> SetOnConnStart is called....")); err != nil {
+			fmt.Println("====> SetOnConnStart is called err....", err)
+		}
+
+		connection.SetProperty("name", "ziyou")
+		connection.SetProperty("name1", "ziyou1")
+		connection.SetProperty("name2", "ziyou2")
+		connection.SetProperty("name3", "ziyou3")
+
+	})
+
+	s.SetOnConnStop(func(connection ziface.IConnection) {
+		fmt.Println("====> SetOnConnStop is called....")
+		fmt.Println(connection.GetProperty("name"))
+		fmt.Println(connection.GetProperty("name1"))
+		fmt.Println(connection.GetProperty("name2"))
+		fmt.Println(connection.GetProperty("name3"))
+	})
+
+	// 3. 添加 router
 
 	s.AddRouter(0, &PingRouter{})
 	s.AddRouter(1, &HelloZinxRouter{})
-	// 3. start server
+	// 4. start server
 	s.Server()
 }
