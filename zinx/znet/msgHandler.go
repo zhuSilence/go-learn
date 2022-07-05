@@ -28,7 +28,8 @@ func NewMsgHandle() *MsgHandle {
 func (mh *MsgHandle) DoMsgHandler(request ziface.IRequest) {
 	router, ok := mh.Apis[request.GetMsgID()]
 	if !ok {
-		panic("msgId = " + strconv.Itoa(int(request.GetMsgID())) + " doesn't exist need register")
+		fmt.Println("api msgId = ", request.GetMsgID(), " doesn't exist need register")
+		return
 	}
 	router.PreHandle(request)
 	router.Handle(request)
